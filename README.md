@@ -1,3 +1,7 @@
+<div align="right">
+  <strong>English</strong> | <a href="README.pt-BR.md">Português</a>
+</div>
+
 # ZeroPingMirror ⚡📱
 
 [![Language](https://img.shields.io/badge/Language-Kotlin%201.9%2B-purple.svg)](https://kotlinlang.org/)
@@ -64,12 +68,12 @@ flowchart LR
 
 ## 📊 Performance Benchmarks (Device: Snapdragon 8 Gen 2 / Wi-Fi 6 Local LAN)
 
-| Métrica | ZeroPingMirror | Padrão scrcpy / ADB | Apps Tradicionais (AirDroid / AnyDesk) |
+| Metric | ZeroPingMirror | Standard scrcpy / ADB | Legacy Apps (AirDroid / AnyDesk) |
 | :--- | :---: | :---: | :---: |
-| **Latência Média de Espelhamento** | **11.4 ms** | 35.0 ms | 120.0 - 250.0 ms |
-| **Frame Rate Estável** | **60.0 FPS** | 60.0 FPS | 24.0 - 30.0 FPS |
-| **Uso Médio de CPU** | **< 3.5%** | ~6.0% | > 18.0% |
-| **Throughput de Rede (1080p)** | **8.2 Mbps** | 12.0 Mbps | 4.5 Mbps (Compressão Pesada) |
+| **Average Mirroring Latency** | **11.4 ms** | 35.0 ms | 120.0 - 250.0 ms |
+| **Stable Frame Rate** | **60.0 FPS** | 60.0 FPS | 24.0 - 30.0 FPS |
+| **Average CPU Utilization** | **< 3.5%** | ~6.0% | > 18.0% |
+| **Network Throughput (1080p)** | **8.2 Mbps** | 12.0 Mbps | 4.5 Mbps (Heavy Compression) |
 
 ---
 
