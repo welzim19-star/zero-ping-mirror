@@ -12,6 +12,8 @@
 
 > **Motor de Espelhamento de Tela Android e Telemetria em Tempo Real com Latência Ultrabaixa.**  
 > Projetado para jogos competitivos em tempo real, controle móvel de missão crítica e transmissão de vídeo acelerada por hardware com sobrecarga de transmissão sub-frame.
+> 📦 **Download da Release:** [`ZeroPingMirror-v1.0.0.apk`](https://github.com/welzim19-star/zero-ping-mirror/releases/download/v1.0.0/ZeroPingMirror-v1.0.0.apk)  
+> *(Binário compilado para Android 14+ API 34 com aceleração direta por GPU via MediaCodec)*
 
 ---
 
