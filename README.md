@@ -10,6 +10,7 @@
 [![Pipeline](https://img.shields.io/badge/Transport-WebRTC%20%2F%20Raw%20Sockets-blue.svg)](https://webrtc.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](LICENSE)
 [![Latest Release](https://img.shields.io/github/v/release/welzim19-star/zero-ping-mirror?label=Release&color=brightgreen&logo=android)](https://github.com/welzim19-star/zero-ping-mirror/releases/latest)
+[![Android CI](https://github.com/welzim19-star/zero-ping-mirror/actions/workflows/build-apk.yml/badge.svg)](https://github.com/welzim19-star/zero-ping-mirror/actions/workflows/build-apk.yml)
 
 > **Ultra-Low-Latency Android Screen Mirroring & Remote Telemetry Engine.**  
 > Engineered for real-time gaming, mission-critical mobile control, and hardware-accelerated video streaming with sub-frame transmission overhead.

@@ -9,6 +9,8 @@
 [![Aceleração](https://img.shields.io/badge/V%C3%ADdeo-MediaCodec%20Hardware%20H.264-red.svg)](https://developer.android.com/reference/android/media/MediaCodec)
 [![Transporte](https://img.shields.io/badge/Transporte-WebRTC%20%2F%20Sockets%20Brutos-blue.svg)](https://webrtc.org/)
 [![Licença](https://img.shields.io/badge/Licen%C3%A7a-Apache%202.0-orange.svg)](LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/welzim19-star/zero-ping-mirror?label=Release&color=brightgreen&logo=android)](https://github.com/welzim19-star/zero-ping-mirror/releases/latest)
+[![Android CI](https://github.com/welzim19-star/zero-ping-mirror/actions/workflows/build-apk.yml/badge.svg)](https://github.com/welzim19-star/zero-ping-mirror/actions/workflows/build-apk.yml)
 
 > **Motor de Espelhamento de Tela Android e Telemetria em Tempo Real com Latência Ultrabaixa.**  
 > Projetado para jogos competitivos em tempo real, controle móvel de missão crítica e transmissão de vídeo acelerada por hardware com sobrecarga de transmissão sub-frame.
