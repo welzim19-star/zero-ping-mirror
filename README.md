@@ -24,7 +24,7 @@
 ZeroPingMirror bypasses standard userland Android screenshot and bitmap capture routines. It binds directly to the OS `MediaProjection` API and feeds frames directly into hardware GPU encoders without CPU memory copies.
 
 ```mermaid
-flowchart LR
+flowchart TD
     Screen["Android Screen Framebuffer<br/>(Display Layer)"]
     
     subgraph CAPTURE["Zero-Copy Capture Layer"]
@@ -34,7 +34,7 @@ flowchart LR
     end
     
     subgraph ENCODER["Hardware Encoding Pipeline"]
-        Codec["MediaCodec (H.264 / AVC)<br/>(Hardware Dedicated ASIC)"]
+        Codec["MediaCodec H.264 / AVC<br/>(Hardware ASIC)"]
         Surface --> Codec
     end
     
@@ -45,7 +45,7 @@ flowchart LR
         Mux --> Socket
     end
     
-    Client["Receiver Client<br/>(Desktop / Web Browser / Monitor)"]
+    Client["Receiver Client<br/>(Desktop / Web Browser)"]
 
     Screen --> MP
     Socket --> Client

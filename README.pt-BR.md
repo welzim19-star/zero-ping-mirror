@@ -24,28 +24,28 @@
 O ZeroPingMirror contorna os métodos tradicionais em espaço de usuário (*userland*) de captura de tela e bitmaps do Android. Ele se vincula diretamente à API nativa `MediaProjection` do sistema operacional e alimenta os quadros diretamente nos codificadores da GPU sem cópias de memória pela CPU.
 
 ```mermaid
-flowchart LR
-    Screen["Framebuffer de Tela Android\n(Camada de Exibição)"]
+flowchart TD
+    Screen["Framebuffer de Tela Android<br/>(Camada de Exibição)"]
     
     subgraph CAPTURE["Camada de Captura Zero-Copy"]
-        MP["API MediaProjection\n(VirtualDisplay)"]
-        Surface["Superfície de Entrada\n(Buffer Direto de GPU)"]
+        MP["API MediaProjection<br/>(VirtualDisplay)"]
+        Surface["Superfície de Entrada<br/>(Buffer GPU Direto)"]
         MP --> Surface
     end
     
     subgraph ENCODER["Pipeline de Codificação em Hardware"]
-        Codec["MediaCodec (H.264 / AVC)\n(ASIC Dedicado de Hardware)"]
+        Codec["MediaCodec H.264 / AVC<br/>(Hardware ASIC)"]
         Surface --> Codec
     end
     
     subgraph TRANSPORT["Transporte de Ultrabaixa Latência"]
         Mux["Empacotador RTP / WebRTC"]
-        Socket["Socket Não Bloqueante UDP/TCP"]
+        Socket["Socket Assíncrono UDP/TCP"]
         Codec --> Mux
         Mux --> Socket
     end
     
-    Client["Cliente Receptor\n(Desktop / Navegador Web / Monitor)"]
+    Client["Cliente Receptor<br/>(Desktop / Navegador Web)"]
 
     Screen --> MP
     Socket --> Client
