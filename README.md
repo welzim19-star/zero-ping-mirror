@@ -9,9 +9,12 @@
 [![Acceleration](https://img.shields.io/badge/Video-MediaCodec%20Hardware%20H.264-red.svg)](https://developer.android.com/reference/android/media/MediaCodec)
 [![Pipeline](https://img.shields.io/badge/Transport-WebRTC%20%2F%20Raw%20Sockets-blue.svg)](https://webrtc.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/welzim19-star/zero-ping-mirror?label=Release&color=brightgreen&logo=android)](https://github.com/welzim19-star/zero-ping-mirror/releases/latest)
 
 > **Ultra-Low-Latency Android Screen Mirroring & Remote Telemetry Engine.**  
 > Engineered for real-time gaming, mission-critical mobile control, and hardware-accelerated video streaming with sub-frame transmission overhead.
+> 📦 **Download Binary Release:** [`ZeroPingMirror-v1.0.0.apk`](https://github.com/welzim19-star/zero-ping-mirror/releases/download/v1.0.0/ZeroPingMirror-v1.0.0.apk)  
+> *(Compiled binary for Android 14+ API 34 with MediaCodec GPU hardware acceleration)*
 
 ---
 
