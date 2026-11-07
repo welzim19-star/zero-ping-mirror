@@ -21,16 +21,16 @@ ZeroPingMirror bypasses standard userland Android screenshot and bitmap capture 
 
 ```mermaid
 flowchart LR
-    Screen["Android Screen Framebuffer\n(Display Layer)"]
+    Screen["Android Screen Framebuffer<br/>(Display Layer)"]
     
     subgraph CAPTURE["Zero-Copy Capture Layer"]
-        MP["MediaProjection API\n(VirtualDisplay)"]
-        Surface["Input Surface\n(Direct GPU Buffer)"]
+        MP["MediaProjection API<br/>(VirtualDisplay)"]
+        Surface["Input Surface<br/>(Direct GPU Buffer)"]
         MP --> Surface
     end
     
     subgraph ENCODER["Hardware Encoding Pipeline"]
-        Codec["MediaCodec (H.264 / AVC)\n(Hardware Dedicated ASIC)"]
+        Codec["MediaCodec (H.264 / AVC)<br/>(Hardware Dedicated ASIC)"]
         Surface --> Codec
     end
     
@@ -41,7 +41,7 @@ flowchart LR
         Mux --> Socket
     end
     
-    Client["Receiver Client\n(Desktop / Web Browser / Monitor)"]
+    Client["Receiver Client<br/>(Desktop / Web Browser / Monitor)"]
 
     Screen --> MP
     Socket --> Client
