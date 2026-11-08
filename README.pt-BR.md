@@ -25,27 +25,27 @@ O ZeroPingMirror contorna os métodos tradicionais em espaço de usuário (*user
 
 ```mermaid
 flowchart TD
-    Screen["Framebuffer de Tela Android<br/>(Camada de Exibição)"]
+    Screen["Framebuffer de Tela Android"]
     
-    subgraph CAPTURE["Camada de Captura Zero-Copy"]
-        MP["API MediaProjection<br/>(VirtualDisplay)"]
-        Surface["Superfície de Entrada<br/>(Buffer GPU Direto)"]
+    subgraph CAPTURE["Captura Zero-Copy"]
+        MP["API MediaProjection"]
+        Surface["Superfície de Entrada GPU"]
         MP --> Surface
     end
     
     subgraph ENCODER["Pipeline de Codificação em Hardware"]
-        Codec["MediaCodec H.264 / AVC<br/>(Hardware ASIC)"]
+        Codec["MediaCodec Hardware ASIC"]
         Surface --> Codec
     end
     
     subgraph TRANSPORT["Transporte de Ultrabaixa Latência"]
         Mux["Empacotador RTP / WebRTC"]
-        Socket["Socket Assíncrono UDP/TCP"]
+        Socket["Socket Assíncrono de Rede"]
         Codec --> Mux
         Mux --> Socket
     end
     
-    Client["Cliente Receptor<br/>(Desktop / Navegador Web)"]
+    Client["Cliente Receptor"]
 
     Screen --> MP
     Socket --> Client
