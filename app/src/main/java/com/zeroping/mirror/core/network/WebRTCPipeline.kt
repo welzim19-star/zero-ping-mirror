@@ -6,19 +6,28 @@ import android.media.projection.MediaProjection
 import com.zeroping.mirror.core.obs.KillcamLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.webrtc.*
+import java.util.concurrent.atomic.AtomicBoolean
 
 class WebRTCPipeline(
     private val context: Context,
     private val signalingServer: SignalingServer
 ) {
+    companion object {
+        private val webrtcInitialized = AtomicBoolean(false)
+    }
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var peerConnectionFactory: PeerConnectionFactory? = null
     private var peerConnection: PeerConnection? = null
     private var rootEglBase: EglBase? = null
     private var videoCapturer: VideoCapturer? = null
     private var surfaceTextureHelper: SurfaceTextureHelper? = null
+    private var videoSource: VideoSource? = null
     private var localVideoTrack: VideoTrack? = null
 
     init {
@@ -29,11 +38,13 @@ class WebRTCPipeline(
     private fun initWebRTC() {
         try {
             rootEglBase = EglBase.create()
-            PeerConnectionFactory.initialize(
-                PeerConnectionFactory.InitializationOptions.builder(context)
-                    .setEnableInternalTracer(true)
-                    .createInitializationOptions()
-            )
+            if (webrtcInitialized.compareAndSet(false, true)) {
+                PeerConnectionFactory.initialize(
+                    PeerConnectionFactory.InitializationOptions.builder(context.applicationContext)
+                        .setEnableInternalTracer(false)
+                        .createInitializationOptions()
+                )
+            }
             val options = PeerConnectionFactory.Options()
             val defaultVideoEncoderFactory = DefaultVideoEncoderFactory(
                 rootEglBase?.eglBaseContext, true, true
@@ -61,97 +72,110 @@ class WebRTCPipeline(
             })
 
             surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", rootEglBase?.eglBaseContext)
-            val videoSource = peerConnectionFactory?.createVideoSource((videoCapturer as ScreenCapturerAndroid).isScreencast)
+            videoSource = peerConnectionFactory?.createVideoSource(true)
             
-            videoCapturer?.initialize(surfaceTextureHelper, context, videoSource?.capturerObserver)
-            // 720p 60fps
+            videoCapturer?.initialize(surfaceTextureHelper, context.applicationContext, videoSource?.capturerObserver)
             videoCapturer?.startCapture(1280, 720, 60)
 
             localVideoTrack = peerConnectionFactory?.createVideoTrack("ARDAMSv0", videoSource)
-            setupPeerConnection()
+            KillcamLogger.logInfo("WebRTC", "Captura 720p60 pronta. Aguardando player no lobby...")
         } catch (e: Exception) {
             KillcamLogger.logError("WebRTC-Capture", e)
         }
     }
-
-    private fun setupPeerConnection() {
-        val rtcConfig = PeerConnection.RTCConfiguration(emptyList())
-        peerConnection = peerConnectionFactory?.createPeerConnection(rtcConfig, object : PeerConnection.Observer {
-            override fun onSignalingChange(newState: PeerConnection.SignalingState?) {}
-            override fun onIceConnectionChange(newState: PeerConnection.IceConnectionState?) {
-                KillcamLogger.logInfo("WebRTC", "ICE State mudou para: ${newState?.name}")
+    private fun createOfferForClient() {
+        try {
+            peerConnection?.dispose()
+            val rtcConfig = PeerConnection.RTCConfiguration(emptyList()).apply {
+                sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
             }
-            override fun onIceConnectionReceivingChange(receiving: Boolean) {}
-            override fun onIceGatheringChange(newState: PeerConnection.IceGatheringState?) {}
-            override fun onIceCandidate(candidate: IceCandidate?) {
-                candidate?.let {
-                    val json = JSONObject()
-                    json.put("type", "candidate")
-                    val candJson = JSONObject()
-                    candJson.put("sdpMLineIndex", it.sdpMLineIndex)
-                    candJson.put("sdpMid", it.sdpMid)
-                    candJson.put("candidate", it.sdp)
-                    json.put("candidate", candJson)
-                    CoroutineScope(Dispatchers.IO).launch {
-                        signalingServer.sendMessage(json.toString())
+
+            peerConnection = peerConnectionFactory?.createPeerConnection(rtcConfig, object : PeerConnection.Observer {
+                override fun onSignalingChange(newState: PeerConnection.SignalingState?) {}
+                override fun onIceConnectionChange(newState: PeerConnection.IceConnectionState?) {
+                    KillcamLogger.logInfo("WebRTC", "ICE State: ${newState?.name}")
+                }
+                override fun onIceConnectionReceivingChange(receiving: Boolean) {}
+                override fun onIceGatheringChange(newState: PeerConnection.IceGatheringState?) {}
+                override fun onIceCandidate(candidate: IceCandidate?) {
+                    candidate?.let {
+                        val json = JSONObject().apply {
+                            put("type", "candidate")
+                            put("candidate", JSONObject().apply {
+                                put("sdpMLineIndex", it.sdpMLineIndex)
+                                put("sdpMid", it.sdpMid)
+                                put("candidate", it.sdp)
+                            })
+                        }
+                        scope.launch { signalingServer.sendMessage(json.toString()) }
                     }
                 }
-            }
-            override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>?) {}
-            override fun onAddStream(stream: MediaStream?) {}
-            override fun onRemoveStream(stream: MediaStream?) {}
-            override fun onDataChannel(dataChannel: DataChannel?) {}
-            override fun onRenegotiationNeeded() {}
-            override fun onAddTrack(receiver: RtpReceiver?, mediaStreams: Array<out MediaStream>?) {}
-        })
+                override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>?) {}
+                override fun onAddStream(stream: MediaStream?) {}
+                override fun onRemoveStream(stream: MediaStream?) {}
+                override fun onDataChannel(dataChannel: DataChannel?) {}
+                override fun onRenegotiationNeeded() {}
+                override fun onAddTrack(receiver: RtpReceiver?, mediaStreams: Array<out MediaStream>?) {}
+            })
 
-        localVideoTrack?.let {
-            peerConnection?.addTrack(it, listOf("ARDAMS"))
+            localVideoTrack?.let { track ->
+                val sender = peerConnection?.addTrack(track, listOf("ARDAMS"))
+                sender?.parameters?.let { params ->
+                    params.degradationPreference = RtpParameters.DegradationPreference.MAINTAIN_FRAMERATE
+                    sender.parameters = params
+                }
+            }
+
+            val constraints = MediaConstraints().apply {
+                mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo", "false"))
+            }
+            
+            peerConnection?.createOffer(object : SimpleSdpObserver() {
+                override fun onCreateSuccess(sessionDescription: SessionDescription?) {
+                    peerConnection?.setLocalDescription(SimpleSdpObserver(), sessionDescription)
+                    sessionDescription?.let {
+                        val json = JSONObject().apply {
+                            put("type", "offer")
+                            put("offer", JSONObject().apply {
+                                put("type", "offer")
+                                put("sdp", it.description)
+                            })
+                        }
+                        scope.launch { signalingServer.sendMessage(json.toString()) }
+                        KillcamLogger.logInfo("WebRTC", "Offer enviada pro player conectado!")
+                    }
+                }
+            }, constraints)
+        } catch (e: Exception) {
+            KillcamLogger.logError("WebRTC-Offer", e)
         }
-
-        // Criar Offer para o player que conectou no lobby
-        val constraints = MediaConstraints()
-        constraints.mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo", "false"))
-        
-        peerConnection?.createOffer(object : SimpleSdpObserver() {
-            override fun onCreateSuccess(sessionDescription: SessionDescription?) {
-                peerConnection?.setLocalDescription(SimpleSdpObserver(), sessionDescription)
-                sessionDescription?.let {
-                    val json = JSONObject()
-                    json.put("type", "offer")
-                    val offerJson = JSONObject()
-                    offerJson.put("type", "offer")
-                    offerJson.put("sdp", it.description)
-                    json.put("offer", offerJson)
-                    CoroutineScope(Dispatchers.IO).launch {
-                        signalingServer.sendMessage(json.toString())
-                    }
-                    KillcamLogger.logInfo("WebRTC", "Offer enviada pro lobby")
-                }
-            }
-        }, constraints)
     }
 
     private fun listenToSignaling() {
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.launch {
             signalingServer.incomingMessages.collect { message ->
                 try {
                     val json = JSONObject(message)
-                    val type = json.getString("type")
-                    if (type == "answer") {
-                        val answerJson = json.getJSONObject("answer")
-                        val sdp = answerJson.getString("sdp")
-                        val sessionDesc = SessionDescription(SessionDescription.Type.ANSWER, sdp)
-                        peerConnection?.setRemoteDescription(SimpleSdpObserver(), sessionDesc)
-                        KillcamLogger.logInfo("WebRTC", "Answer recebida (Conexão p2p travada).")
-                    } else if (type == "candidate") {
-                        val candJson = json.getJSONObject("candidate")
-                        val iceCandidate = IceCandidate(
-                            candJson.getString("sdpMid"),
-                            candJson.getInt("sdpMLineIndex"),
-                            candJson.getString("candidate")
-                        )
-                        peerConnection?.addIceCandidate(iceCandidate)
+                    when (json.getString("type")) {
+                        "client_ready" -> createOfferForClient()
+                        "answer" -> {
+                            val sdp = json.getJSONObject("answer").getString("sdp")
+                            peerConnection?.setRemoteDescription(
+                                SimpleSdpObserver(),
+                                SessionDescription(SessionDescription.Type.ANSWER, sdp)
+                            )
+                            KillcamLogger.logInfo("WebRTC", "Answer recebida (Conexao P2P travada).")
+                        }
+                        "candidate" -> {
+                            val candJson = json.getJSONObject("candidate")
+                            peerConnection?.addIceCandidate(
+                                IceCandidate(
+                                    candJson.getString("sdpMid"),
+                                    candJson.getInt("sdpMLineIndex"),
+                                    candJson.getString("candidate")
+                                )
+                            )
+                        }
                     }
                 } catch (e: Exception) {
                     KillcamLogger.logError("WebRTC-Signaling", e)
@@ -160,14 +184,27 @@ class WebRTCPipeline(
         }
     }
 
+    fun stop() {
+        try {
+            scope.cancel()
+            videoCapturer?.stopCapture()
+            videoCapturer?.dispose()
+            localVideoTrack?.dispose()
+            videoSource?.dispose()
+            surfaceTextureHelper?.dispose()
+            peerConnection?.dispose()
+            peerConnectionFactory?.dispose()
+            rootEglBase?.release()
+            KillcamLogger.logInfo("WebRTC", "Pipeline encerrado e memoria liberada.")
+        } catch (e: Exception) {
+            KillcamLogger.logError("WebRTC-Stop", e)
+        }
+    }
+
     open class SimpleSdpObserver : SdpObserver {
         override fun onCreateSuccess(sessionDescription: SessionDescription?) {}
         override fun onSetSuccess() {}
-        override fun onCreateFailure(s: String?) {
-            KillcamLogger.logError("WebRTC-SDP", Exception(s))
-        }
-        override fun onSetFailure(s: String?) {
-            KillcamLogger.logError("WebRTC-SDP-Set", Exception(s))
-        }
+        override fun onCreateFailure(s: String?) { KillcamLogger.logError("WebRTC-SDP", Exception(s)) }
+        override fun onSetFailure(s: String?) { KillcamLogger.logError("WebRTC-SDP-Set", Exception(s)) }
     }
 }
